@@ -5,259 +5,590 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Commander">
+    <meta name="theme-color" content="#000000">
+    <title>Commander Tracker</title>
 
-    <title>Commander Tracker Pro</title>
-
-    <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjojOTMzM2VhO2JvcmRlci1yYWRpdXM6MjIlIj48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjU2IDQ4TDQ4IDQ2NGg0MTZMMjU2IDQ4em0wIDU2LjRsMTU1LjggMzE5LjZgOTkuOC0zMTkuNkwyNTYgMTA0LjR6IiBvcGFjaXR5PSIwLjkiLz48dGV4dCB4PSI1MCUiIHk9IjY1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNjAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmZiI+MjA8L3RleHQ+PC9zdmc+">
-    <link rel="icon" type="image/x-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIiBzdHlsZT0iYmFja2dyb3VuZC1jb2xvcjojOTMzM2VhO2JvcmRlci1yYWRpdXM6MjIlIj48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjU2IDQ4TDQ4IDQ2NGg0MTZMMjU2IDQ4em0wIDU2LjRsMTU1LjggMzE5LjZgOTkuOC0zMTkuNkwyNTYgMTA0LjR6IiBvcGFjaXR5PSIwLjkiLz48dGV4dCB4PSI1MCUiIHk9IjY1JSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC1zaXplPSIxNjAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmZiI+MjA8L3RleHQ+PC9zdmc+">
-
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        const firebaseConfig = { apiKey: "AIzaSyC8sMzkkeF-6aBxi8n406hqD8-N0mAC-00", authDomain: "commandertracker-5b4c5.firebaseapp.com", projectId: "commandertracker-5b4c5", storageBucket: "commandertracker-5b4c5.firebasestorage.app", messagingSenderId: "591105293707", appId: "1:591105293707:web:d0dc9da4caf484c941c38e", measurementId: "G-6WZSTXS55D" };
-        const app = initializeApp(firebaseConfig);
-        window.db = getFirestore(app);
-        window.dbMethods = { collection, addDoc, getDocs, updateDoc, doc, increment, serverTimestamp };
+        import { getFirestore, collection, addDoc, setDoc, getDocs, updateDoc, onSnapshot, doc, increment, serverTimestamp, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        window.startFirebase = async () => {
+            try {
+                const config = { apiKey: "AIzaSyC8sMzkkeF-6aBxi8n406hqD8-N0mAC-00", authDomain: "commandertracker-5b4c5.firebaseapp.com", projectId: "commandertracker-5b4c5", storageBucket: "commandertracker-5b4c5.firebasestorage.app", messagingSenderId: "591105293707", appId: "1:591105293707:web:d0dc9da4caf484c941c38e", measurementId: "G-6WZSTXS55D" };
+                const app = initializeApp(config);
+                window.db = getFirestore(app);
+                window.dbMethods = { collection, addDoc, setDoc, getDocs, updateDoc, onSnapshot, doc, increment, serverTimestamp, query, orderBy, limit };
+                window.isOnline = true;
+            } catch (e) { window.isOnline = false; }
+        };
+        window.startFirebase();
     </script>
 
     <style>
-        body { font-family: 'Chakra Petch', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none; background-color: #000; }
-        .safe-area { height: 100dvh; width: 100vw; overflow: hidden; display: flex; flex-direction: column; }
-        ::-webkit-scrollbar { display: none; }
-        .text-shadow { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000; }
-        .bg-glass { background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); }
-        .glow-border { border-color: #fbbf24 !important; box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.5); z-index: 50; }
-        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
-        .animate-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* --- CORE RESET --- */
+        :root {
+            --bg: #050505;
+            --panel: #151515;
+            --border: rgba(255,255,255,0.15);
+            --accent: #3b82f6;
+            --text: #e5e5e5;
+            --danger: #ef4444;
+            --success: #22c55e;
+            --gold: #eab308;
+            --glass: rgba(255, 255, 255, 0.08);
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; font-family: 'Chakra Petch', sans-serif; }
+
+        body {
+            margin: 0; padding: 0;
+            background: #000; color: var(--text);
+            height: 100dvh; width: 100vw;
+            overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* --- APP CONTAINER (The "Tabletop") --- */
+        #app {
+            width: 100%; height: 100%;
+            position: relative;
+            background: var(--bg);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* PC MODE: Restrain width, add margins, make it look like an app */
+        @media (min-width: 1024px) {
+            #app {
+                max-width: 1200px;
+                height: 95vh;
+                border: 1px solid var(--border);
+                border-radius: 24px;
+                box-shadow: 0 0 60px rgba(0,0,0,0.8);
+            }
+            body { background: #111; }
+        }
+
+        /* SCREENS */
+        .screen {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            background: var(--bg); z-index: 10;
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- SETUP SCREEN --- */
+        #setup-view {
+            z-index: 100;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 20px;
+            align-items: center;
+        }
+
+        .setup-wrapper {
+            width: 100%; max-width: 500px;
+            display: flex; flex-direction: column; gap: 15px;
+            padding-bottom: 50px;
+        }
+
+        .card {
+            background: var(--panel); border: 1px solid var(--border);
+            border-radius: 16px; padding: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .row { display: flex; gap: 10px; align-items: center; }
+
+        input {
+            background: #000; border: 1px solid #444; color: white;
+            padding: 12px; border-radius: 10px; flex: 1; outline: none; font-size: 1rem;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: var(--accent); }
+
+        button {
+            background: var(--accent); color: white; border: none;
+            padding: 12px; border-radius: 10px; font-weight: bold; cursor: pointer;
+            transition: all 0.1s; font-size: 0.9rem;
+        }
+        button:active { transform: scale(0.96); opacity: 0.9; }
+        button.secondary { background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid transparent; }
+        button.active { background: var(--accent); color: white; border: 2px solid rgba(255,255,255,0.5); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+
+        /* --- GAME BOARD --- */
+        #game-view { z-index: 50; }
+
+        #game-grid {
+            display: flex; flex-direction: column;
+            width: 100%; height: 100%;
+        }
+
+        .player-row {
+            display: flex; flex: 1;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .player-row:last-child { border-bottom: none; }
+
+        .seat {
+            flex: 1; position: relative;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            background-size: cover; background-position: center;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        .seat:last-child { border-right: none; }
+
+        /* Rotations for Opponents */
+        .player-row:first-child .seat { transform: rotate(180deg); }
+
+        .seat-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); z-index: 1; backdrop-filter: blur(2px); }
+        .seat-ui { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 1vh; }
+
+        /* LIFE & CONTROLS */
+        .life-group { display: flex; align-items: center; gap: 5vw; }
+
+        .life-btn {
+            width: clamp(40px, 8vw, 60px); height: clamp(40px, 8vw, 60px); border-radius: 50%;
+            background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            font-size: 2rem; display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(10px); cursor: pointer;
+        }
+        .life-btn:active { background: rgba(255,255,255,0.2); }
+
+        .life-total {
+            font-size: clamp(4rem, 15vw, 8rem);
+            font-weight: 700; line-height: 1;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .life-total.danger { color: var(--danger); text-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+
+        .name-tag {
+            background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 20px;
+            font-size: 0.9rem; max-width: 80%;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(4px);
+            text-shadow: 1px 1px 0 #000;
+        }
+
+        .tools { display: flex; gap: 10px; margin-top: 10px; }
+        .tool {
+            width: clamp(36px, 7vw, 44px); height: clamp(36px, 7vw, 44px);
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; position: relative; cursor: pointer;
+            backdrop-filter: blur(5px);
+        }
+        .counter {
+            position: absolute; top: -6px; right: -6px;
+            background: var(--success); color: black;
+            font-size: 0.7rem; font-weight: bold;
+            width: 18px; height: 18px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        /* CENTER MENU */
+        #center-menu {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 90; display: flex; flex-direction: column; gap: 10px;
+        }
+        .menu-btn {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: #111; border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            font-size: 0.7rem; font-weight: bold; color: #ccc;
+            cursor: pointer; transition: transform 0.1s;
+        }
+        .menu-btn:active { transform: translate(-50%, -50%) scale(0.9); }
+        .menu-btn.roll { background: #7c3aed; border-color: #a78bfa; color: white; box-shadow: 0 0 20px rgba(124, 58, 237, 0.5); }
+
+        /* MODALS */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(5px); z-index: 200; display: none; align-items: center; justify-content: center; }
+        .active { display: flex !important; }
+        .modal-box { width: 90%; max-width: 400px; background: #1a1a1a; padding: 25px; border-radius: 20px; border: 1px solid #444; text-align: center; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.8); }
+
+        .glow-active {
+            box-shadow: inset 0 0 0 4px var(--gold), inset 0 0 50px rgba(234, 179, 8, 0.3) !important;
+            border-color: var(--gold) !important;
+        }
     </style>
 </head>
-<body class="bg-black text-white">
+<body>
 
-    <div id="app" class="safe-area">
-        <div v-if="!wakeLockActive" @click="activateWakeLock" class="absolute inset-0 z-[200] bg-transparent"></div>
+    <div id="app">
 
-        <div v-if="showSetup" class="absolute inset-0 bg-gray-900/95 backdrop-blur z-[100] flex flex-col items-center justify-center p-4 overflow-y-auto">
-            <h1 class="text-3xl font-bold mb-4 text-blue-400 mt-10">Commander</h1>
+        <div id="setup-view" class="screen">
+            <div class="setup-wrapper">
+                <h1 style="text-align:center; color:var(--accent); margin:10px 0 0; font-size: 2.5rem; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);">Commander</h1>
+                <div style="text-align:center; color:#666; font-size:0.7rem; margin-bottom:20px;">v1.1.2 (Visuals + Fixes)</div>
 
-            <div class="flex items-center gap-2 mb-4 bg-gray-800 p-3 rounded-lg border border-gray-700 w-full max-w-sm">
-                <span class="text-gray-400 text-xs font-bold uppercase">Group:</span>
-                <input v-model="groupName" @change="switchGroup" class="bg-transparent text-white font-bold outline-none flex-1" placeholder="Name">
-                <button @click="switchGroup" class="bg-blue-600 px-3 py-1 rounded text-xs font-bold">LOAD</button>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg mb-6">
-                <div v-for="(player, idx) in players" :key="player.id"
-                     class="p-3 rounded border transition-all"
-                     :class="player.active ? 'bg-gray-800 border-gray-600' : 'bg-gray-900 border-gray-800 opacity-50'">
-
-                    <div class="flex justify-between items-center mb-2">
-                        <button @click="player.active = !player.active" class="text-xs font-bold uppercase flex items-center gap-2" :class="player.active ? 'text-blue-300' : 'text-gray-500'">
-                            <div class="w-4 h-4 rounded-full border flex items-center justify-center" :class="player.active ? 'bg-blue-500 border-blue-500' : 'border-gray-500'">
-                                <span v-if="player.active" class="text-[8px] text-black">✓</span>
-                            </div>
-                            Seat {{ idx + 1 }}
-                        </button>
-                        <span v-if="!player.active" class="text-[10px] text-gray-500 font-bold uppercase">EMPTY</span>
-                    </div>
-
-                    <div v-if="player.active">
-                        <select v-model="player.profileId" class="bg-black p-2 rounded border border-gray-600 text-white text-sm w-full mb-2">
-                            <option :value="null">Guest</option>
-                            <option v-for="p in savedProfiles" :value="p.id">{{ p.name }}</option>
-                        </select>
-                        <button @click="openCommanderSearch(player, false)" class="flex items-center gap-2 bg-gray-900 border border-gray-600 rounded p-2 w-full hover:bg-gray-700">
-                            <span class="text-xs truncate flex-1 text-left text-gray-300">{{ player.commanderName || "Select Commander..." }}</span>
-                            <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </button>
-                        <div v-if="player.partnerName" class="flex items-center gap-1 mt-2">
-                            <button @click="openCommanderSearch(player, true)" class="flex-1 flex items-center gap-2 bg-gray-900 border border-gray-600 rounded p-2 hover:bg-gray-700">
-                                <span class="text-xs truncate flex-1 text-left text-gray-300">{{ player.partnerName }}</span>
-                            </button>
-                            <button @click="removePartner(player)" class="text-red-500 px-2 text-lg">×</button>
-                        </div>
-                        <button v-else @click="openCommanderSearch(player, true)" class="text-xs text-blue-400 mt-2 pl-1">+ Partner</button>
-                    </div>
+                <div class="card row" style="background: rgba(255,255,255,0.05);">
+                    <span style="font-size:0.7rem; font-weight:bold; color:#888;">GROUP</span>
+                    <input id="group-input" type="text" value="default" style="margin:0; background: transparent; border: none; font-size: 1.1rem; text-align: right;">
+                    <button class="secondary" style="width:auto; margin:0;" onclick="loadGroup()">LOAD</button>
                 </div>
-            </div>
 
-            <button @click="startGame" class="w-full max-w-lg bg-blue-600 py-4 rounded-xl font-bold text-xl hover:bg-blue-500 shadow-lg mb-3">START GAME</button>
-            <div class="flex gap-4 text-sm text-gray-400">
-                <button @click="showNewProfile = true" class="underline">New Profile</button>
-                <button @click="fetchAndShowStats" class="underline">Stats</button>
-            </div>
-            <div class="h-10"></div> </div>
-
-        <div v-if="showCmdSearch" class="absolute inset-0 bg-black/95 z-[160] flex flex-col p-6 safe-area">
-            <h2 class="text-xl font-bold mb-4 text-white text-center">{{ isSearchingPartner ? 'Find Partner' : 'Find Commander' }}</h2>
-            <div class="relative w-full max-w-md mx-auto">
-                <input v-model="cmdSearchQuery" @input="handleSearchInput" placeholder="Start typing..." class="w-full bg-gray-800 p-4 rounded-xl border border-gray-600 text-white text-lg outline-none" autofocus>
-                <div v-if="cmdSuggestions.length > 0" class="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 mt-2 rounded-xl max-h-60 overflow-y-auto z-50">
-                    <div v-for="cardName in cmdSuggestions" @click="selectCommander(cardName)" class="p-4 border-b border-gray-700 hover:bg-gray-700">{{ cardName }}</div>
+                <div style="display:flex; gap:10px;">
+                    <button id="btn-p2" class="secondary" style="flex:1" onclick="setPlayers(2)">2 Players</button>
+                    <button id="btn-p3" class="secondary" style="flex:1" onclick="setPlayers(3)">3 Players</button>
+                    <button id="btn-p4" class="active" style="flex:1" onclick="setPlayers(4)">4 Players</button>
                 </div>
-                <div v-if="cmdLoading" class="mt-4 text-center text-gray-500">Searching...</div>
-            </div>
-            <button @click="showCmdSearch = false" class="mt-8 text-gray-400 underline text-center">Cancel</button>
-        </div>
 
-        <div v-if="showTaxSelector" class="absolute inset-0 bg-black/90 z-[140] flex items-center justify-center p-6 animate-fade-in"><div class="bg-gray-800 p-6 rounded-2xl w-full max-w-xs text-center"><h3 class="text-xl font-bold mb-4">Cast Which?</h3><div class="flex flex-col gap-3"><button @click="applyTax(taxPlayer, 'primary')" class="bg-blue-600 p-4 rounded-xl font-bold">{{ taxPlayer.commanderName }}</button><button @click="applyTax(taxPlayer, 'partner')" class="bg-purple-600 p-4 rounded-xl font-bold">{{ taxPlayer.partnerName }}</button></div><button @click="showTaxSelector = false" class="mt-4 text-gray-400">Cancel</button></div></div>
+                <div id="seats-list" style="display:flex; flex-direction:column; gap:12px;"></div>
 
-        <div v-if="showStats" class="absolute inset-0 bg-black z-[120] flex flex-col p-6 overflow-y-auto safe-area"><div class="flex justify-between items-center mb-6"><div><h2 class="text-xl font-bold text-blue-400">Stats</h2><span class="text-xs text-gray-500">{{ groupName }}</span></div><button @click="showStats = false" class="text-gray-400">Close</button></div><div v-if="loadingStats" class="text-center mt-20">Loading...</div><div v-else class="flex flex-col gap-8 pb-10"><div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h3 class="text-sm font-bold text-gray-400 mb-4">Wins</h3><div class="h-64"><canvas id="playerChart"></canvas></div></div><div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h3 class="text-sm font-bold text-gray-400 mb-4">Meta</h3><div class="h-64 flex justify-center"><canvas id="methodChart"></canvas></div></div></div></div>
-        <div v-if="showNewProfile" class="absolute inset-0 bg-black/90 z-[110] flex items-center justify-center p-6"><div class="bg-gray-800 p-6 rounded-2xl w-full max-w-sm"><h3 class="text-xl mb-4 font-bold">New Profile</h3><input v-model="newProfileName" placeholder="Name" class="w-full bg-black p-4 rounded-xl mb-4 border border-gray-600"><div class="flex justify-end gap-3"><button @click="showNewProfile = false" class="px-4 text-gray-400">Cancel</button><button @click="createProfile" class="bg-blue-600 px-6 py-2 rounded-xl font-bold">Save</button></div></div></div>
-        <div v-if="showWinSelector" class="absolute inset-0 bg-black/95 z-[150] flex flex-col items-center justify-center p-6 animate-fade-in"><h2 class="text-gray-400 mb-2">Winner:</h2><h1 class="text-3xl font-bold mb-6">{{ pendingWinner?.name }}</h1><div class="grid grid-cols-2 gap-2 w-full max-w-sm"><button @click="finalizeWin('Combat Damage')" class="bg-gray-800 p-3 rounded hover:bg-red-900 border border-gray-700">⚔️ Combat</button><button @click="finalizeWin('Commander Damage')" class="bg-gray-800 p-3 rounded hover:bg-red-900 border border-gray-700">🛡️ Cmd Dmg</button><button @click="finalizeWin('Alternate Win')" class="bg-gray-800 p-3 rounded hover:bg-blue-900 border border-gray-700">🔮 Alt Win</button><button @click="finalizeWin('Infinite Combo')" class="bg-gray-800 p-3 rounded hover:bg-purple-900 border border-gray-700">♾️ Infinite</button><button @click="finalizeWin('Poison')" class="bg-gray-800 p-3 rounded hover:bg-green-900 border border-gray-700">☠️ Poison</button><button @click="finalizeWin('Mill')" class="bg-gray-800 p-3 rounded hover:bg-blue-900 border border-gray-700">📚 Mill</button><button @click="finalizeWin('Concession')" class="col-span-2 bg-gray-800 p-3 rounded hover:bg-gray-700 border border-gray-700">🏳️ Concession</button></div><button @click="showWinSelector = false" class="mt-8 text-gray-500 underline">Cancel</button></div>
-        <div v-if="winner" class="absolute inset-0 bg-black/95 z-[90] flex flex-col items-center justify-center animate-fade-in"><h1 class="text-5xl text-yellow-500 font-bold mb-2">VICTORY</h1><h2 class="text-3xl text-white mb-2">{{ winner.name }}</h2><div class="text-gray-400 mb-4">{{ winner.method }}</div><button @click="saveGameAndReset" class="bg-blue-600 px-10 py-4 rounded-xl font-bold shadow-lg mb-4">Save & Reset</button><button @click="resetWithoutSave" class="text-gray-500">Reset (No Save)</button></div>
+                <button style="background: linear-gradient(135deg, #16a34a, #15803d); font-size:1.2rem; padding:18px; box-shadow: 0 5px 20px rgba(22, 163, 74, 0.4);" onclick="launchGame()">START GAME</button>
 
-        <div class="flex flex-col h-full w-full">
-
-            <div class="flex flex-1 w-full border-b border-gray-800">
-                <div v-for="player in [players[0], players[1]]"
-                     v-show="player.active"
-                     :key="player.id"
-                     class="flex-1 relative border-r border-gray-800 last:border-r-0 flex flex-col items-center justify-center bg-cover bg-center transition-all duration-300"
-                     :class="[player.bgColor, player.rotation, player.isStarting ? 'glow-border' : '']"
-                     :style="{ backgroundImage: player.bgImage ? 'url(' + player.bgImage + ')' : '' }">
-
-                     <div class="absolute inset-0 bg-black/40 pointer-events-none"></div>
-                     <div v-if="player.taxAlert" class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click="player.taxAlert = null"><div class="bg-yellow-500 text-black px-4 py-2 rounded font-bold text-2xl border-4 border-yellow-300">Tax: {{ player.taxAlert }}</div></div>
-                     <div v-if="isDead(player)" class="absolute inset-0 bg-red-950/80 z-20 flex items-center justify-center"><span class="text-xl font-bold text-red-500 border-4 border-red-500 p-2 rounded rotate-12">ELIMINATED</span></div>
-
-                     <div class="relative z-10 flex flex-col items-center gap-1 w-full p-2">
-                        <div class="flex flex-col items-center w-full">
-                            <div class="flex items-center gap-2">
-                                <span v-if="player.isStarting" class="bg-yellow-500 text-black text-[9px] font-bold px-1 rounded">START</span>
-                                <span class="text-lg font-bold text-shadow text-gray-200 truncate max-w-[120px]">{{ getProfileName(player) }}</span>
-                            </div>
-                            <span v-if="player.commanderName" class="text-[10px] text-gray-300 bg-black/50 px-2 rounded truncate max-w-[150px]">{{ player.commanderName }} <span v-if="player.partnerName">+ {{player.partnerName}}</span></span>
-                        </div>
-
-                        <div class="flex items-center gap-3 mt-1">
-                            <button @click="updateLife(player, -1)" class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl border border-white/20 active:bg-red-500/50 transition">-</button>
-                            <span class="text-6xl font-bold text-shadow w-24 text-center tabular-nums" :class="{'text-red-500': player.life <= 10}">{{ player.life }}</span>
-                            <button @click="updateLife(player, 1)" class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl border border-white/20 active:bg-green-500/50 transition">+</button>
-                        </div>
-
-                        <div class="flex gap-3 mt-2">
-                            <button @click="player.showCmd = true" class="p-2 bg-white/10 rounded-lg border border-white/10"><svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></button>
-                            <button @click="player.showPoison = true" class="p-2 bg-white/10 rounded-lg border border-white/10 relative"><svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span v-if="player.poison > 0" class="absolute -top-1 -right-1 text-[10px] bg-green-500 text-black px-1 rounded-full font-bold">{{player.poison}}</span></button>
-                            <button @click="handleCastClick(player)" class="p-2 bg-white/10 rounded-lg border border-white/10 relative"><svg class="w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd"/></svg><span v-if="player.commanderCasts > 0 || player.partnerCasts > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></span></button>
-                            <button @click="initiateWinSequence(player)" class="p-2 bg-white/10 rounded-lg border border-white/10"><svg class="w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3 .542.863 4.909 2.7 9.681 5.375 13.809.725-.688 1.458-1.458 2.051-2.179a17.394 17.394 0 00-2.43-12.727c.569-.126 1.155-.213 1.763-.257l.075-.005v-.04zM12 2.25c.789 0 1.57.07 2.333.204l-.074.005c.616.044 1.209.132 1.778.26a17.392 17.392 0 00-2.43 12.724c.594.72 1.328 1.49 2.052 2.179 2.675-4.128 4.512-8.9 5.375-13.81-1.014-.22-2.115-.41-3.238-.553V2.25H12zM10.875 18.75a3.375 3.375 0 003.375-3.375c-.71 0-1.396.113-2.043.318a4.873 4.873 0 00-.773.308l-.078.038a5.55 5.55 0 00-.077-.038 4.877 4.877 0 00-.774-.308A5.62 5.62 0 008.625 15.375a3.375 3.375 0 002.25 3.375z" clip-rule="evenodd"/><path d="M12 22.5a3.375 3.375 0 002.625-5.636 5.253 5.253 0 01-1.464-.403.957.957 0 00-1.161-.005 5.249 5.249 0 01-1.464.408A3.375 3.375 0 0012 22.5z"/></svg></button>
-                            <label class="p-2 bg-white/10 rounded-lg border border-white/10"><input type="file" class="hidden" accept="image/*" @change="(e) => uploadBackground(e, player)"><svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></label>
-                        </div>
-                     </div>
-
-                     <div v-if="player.showPoison" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showPoison = false">
-                        <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2"><span class="font-bold text-green-400">Poison</span><button @click="player.showPoison = false" class="text-gray-400">Close</button></div>
-                        <div class="flex items-center justify-center gap-6 h-full pb-8"><button @click="player.poison = Math.max(0, player.poison - 1)" class="w-16 h-16 bg-gray-700 rounded-full text-3xl">-</button><span class="text-8xl font-bold text-green-500 tabular-nums">{{ player.poison }}</span><button @click="player.poison++" class="w-16 h-16 bg-gray-700 rounded-full text-3xl">+</button></div>
-                    </div>
-                    <div v-if="player.showCmd" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showCmd = false">
-                        <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2"><span class="font-bold text-gray-300">Commander Dmg</span><button @click="player.showCmd = false" class="text-red-400">Close</button></div>
-                        <div class="flex flex-col gap-2 overflow-y-auto h-full"><div v-for="opponent in getOpponents(player.id)" :key="opponent.id" class="flex flex-col gap-1 bg-gray-800 p-2 rounded"><div class="flex justify-between items-center"><span class="text-xs w-1/3 truncate">{{opponent.commanderName || 'Seat ' + opponent.id}}</span><div class="flex gap-2"><button @click="updateCmdDamage(player, opponent.id, 'c1', -1)" class="w-8 h-8 bg-gray-700 rounded">-</button><span class="w-6 text-center font-bold">{{player.cmdDamage[opponent.id]?.c1||0}}</span><button @click="updateCmdDamage(player, opponent.id, 'c1', 1)" class="w-8 h-8 bg-gray-700 rounded">+</button></div></div><div v-if="opponent.partnerName" class="flex justify-between items-center border-t border-gray-700 pt-1"><span class="text-xs w-1/3 truncate text-gray-400">{{opponent.partnerName}}</span><div class="flex gap-2"><button @click="updateCmdDamage(player, opponent.id, 'c2', -1)" class="w-8 h-8 bg-gray-700 rounded">-</button><span class="w-6 text-center font-bold">{{player.cmdDamage[opponent.id]?.c2||0}}</span><button @click="updateCmdDamage(player, opponent.id, 'c2', 1)" class="w-8 h-8 bg-gray-700 rounded">+</button></div></div></div></div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-1 w-full">
-                <div v-for="player in [players[2], players[3]]" v-show="player.active" :key="player.id" class="flex-1 relative border-r border-gray-800 last:border-r-0 flex flex-col items-center justify-center bg-cover bg-center transition-all duration-300" :class="[player.bgColor, player.rotation, player.isStarting ? 'glow-border' : '']" :style="{ backgroundImage: player.bgImage ? 'url(' + player.bgImage + ')' : '' }">
-                     <div class="absolute inset-0 bg-black/40 pointer-events-none"></div>
-                     <div v-if="player.taxAlert" class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" @click="player.taxAlert = null"><div class="bg-yellow-500 text-black px-4 py-2 rounded font-bold text-2xl border-4 border-yellow-300">Tax: {{ player.taxAlert }}</div></div>
-                     <div v-if="isDead(player)" class="absolute inset-0 bg-red-950/80 z-20 flex items-center justify-center"><span class="text-xl font-bold text-red-500 border-4 border-red-500 p-2 rounded rotate-12">ELIMINATED</span></div>
-                     <div class="relative z-10 flex flex-col items-center gap-1 w-full p-2">
-                        <div class="flex flex-col items-center w-full"><div class="flex items-center gap-2"><span v-if="player.isStarting" class="bg-yellow-500 text-black text-[9px] font-bold px-1 rounded">START</span><span class="text-lg font-bold text-shadow text-gray-200 truncate max-w-[120px]">{{ getProfileName(player) }}</span></div><span v-if="player.commanderName" class="text-[10px] text-gray-300 bg-black/50 px-2 rounded truncate max-w-[150px]">{{ player.commanderName }} <span v-if="player.partnerName">+ {{player.partnerName}}</span></span></div>
-                        <div class="flex items-center gap-3 mt-1"><button @click="updateLife(player, -1)" class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl border border-white/20 active:bg-red-500/50 transition">-</button><span class="text-6xl font-bold text-shadow w-24 text-center tabular-nums" :class="{'text-red-500': player.life <= 10}">{{ player.life }}</span><button @click="updateLife(player, 1)" class="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center text-2xl border border-white/20 active:bg-green-500/50 transition">+</button></div>
-                        <div class="flex gap-3 mt-2"><button @click="player.showCmd = true" class="p-2 bg-white/10 rounded-lg border border-white/10"><svg class="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg></button><button @click="player.showPoison = true" class="p-2 bg-white/10 rounded-lg border border-white/10 relative"><svg class="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span v-if="player.poison > 0" class="absolute -top-1 -right-1 text-[10px] bg-green-500 text-black px-1 rounded-full font-bold">{{player.poison}}</span></button><button @click="handleCastClick(player)" class="p-2 bg-white/10 rounded-lg border border-white/10 relative"><svg class="w-5 h-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd"/></svg><span v-if="player.commanderCasts > 0 || player.partnerCasts > 0" class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full"></span></button><button @click="initiateWinSequence(player)" class="p-2 bg-white/10 rounded-lg border border-white/10"><svg class="w-5 h-5 text-yellow-500" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3 .542.863 4.909 2.7 9.681 5.375 13.809.725-.688 1.458-1.458 2.051-2.179a17.394 17.394 0 00-2.43-12.727c.569-.126 1.155-.213 1.763-.257l.075-.005v-.04zM12 2.25c.789 0 1.57.07 2.333.204l-.074.005c.616.044 1.209.132 1.778.26a17.392 17.392 0 00-2.43 12.724c.594.72 1.328 1.49 2.052 2.179 2.675-4.128 4.512-8.9 5.375-13.81-1.014-.22-2.115-.41-3.238-.553V2.25H12zM10.875 18.75a3.375 3.375 0 003.375-3.375c-.71 0-1.396.113-2.043.318a4.873 4.873 0 00-.773.308l-.078.038a5.55 5.55 0 00-.077-.038 4.877 4.877 0 00-.774-.308A5.62 5.62 0 008.625 15.375a3.375 3.375 0 002.25 3.375z" clip-rule="evenodd"/><path d="M12 22.5a3.375 3.375 0 002.625-5.636 5.253 5.253 0 01-1.464-.403.957.957 0 00-1.161-.005 5.249 5.249 0 01-1.464.408A3.375 3.375 0 0012 22.5z"/></svg></button><label class="p-2 bg-white/10 rounded-lg border border-white/10"><input type="file" class="hidden" accept="image/*" @change="(e) => uploadBackground(e, player)"><svg class="w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></label></div>
-                     </div>
-                     <div v-if="player.showPoison" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showPoison = false">
-                        <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2"><span class="font-bold text-green-400 text-sm uppercase tracking-wider">Poison Counters</span><button @click="player.showPoison = false" class="text-green-400 font-bold text-xs bg-green-900/20 px-3 py-1 rounded">CLOSE</button></div>
-                        <div class="flex items-center justify-center gap-6 h-full pb-10"><button @click="player.poison = Math.max(0, player.poison - 1)" class="w-16 h-16 bg-gray-700 rounded-full text-3xl md:text-4xl active:bg-green-600">-</button><span class="text-6xl md:text-8xl font-bold text-green-500 tabular-nums">{{ player.poison }}</span><button @click="player.poison++" class="w-16 h-16 bg-gray-700 rounded-full text-3xl md:text-4xl active:bg-green-600">+</button></div>
-                    </div>
-                    <div v-if="player.showCmd" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showCmd = false">
-                         <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2"><span class="font-bold text-gray-300 text-xs uppercase">Cmd Damage Received</span><button @click="player.showCmd = false" class="text-red-400 font-bold text-xs bg-red-900/20 px-3 py-1 rounded">CLOSE</button></div>
-                        <div class="flex flex-col gap-2 overflow-y-auto h-full"><div v-for="opponent in getOpponents(player.id)" :key="opponent.id" class="flex flex-col gap-1 bg-gray-800 p-2 rounded border border-gray-700"><div class="flex items-center justify-between"><span class="text-[10px] md:text-xs font-bold w-1/3 truncate text-gray-400">{{ opponent.commanderName || getProfileName(opponent) }}</span><div class="flex items-center gap-2"><button @click="updateCmdDamage(player, opponent.id, 'c1', -1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">-</button><span class="text-lg font-bold w-6 text-center" :class="{'text-red-500': (player.cmdDamage[opponent.id]?.c1 || 0) >= 21}">{{ player.cmdDamage[opponent.id]?.c1 || 0 }}</span><button @click="updateCmdDamage(player, opponent.id, 'c1', 1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">+</button></div></div><div v-if="opponent.partnerName" class="flex items-center justify-between border-t border-gray-700 pt-1 mt-1"><span class="text-[10px] md:text-xs font-bold w-1/3 truncate text-gray-500">{{ opponent.partnerName }}</span><div class="flex items-center gap-2"><button @click="updateCmdDamage(player, opponent.id, 'c2', -1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">-</button><span class="text-lg font-bold w-6 text-center" :class="{'text-red-500': (player.cmdDamage[opponent.id]?.c2 || 0) >= 21}">{{ player.cmdDamage[opponent.id]?.c2 || 0 }}</span><button @click="updateCmdDamage(player, opponent.id, 'c2', 1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">+</button></div></div></div></div>
-                    </div>
+                <div style="text-align:center; margin-top:15px;">
+                    <a href="#" onclick="showStats()" style="color:#666; font-size:0.8rem; text-decoration: none; border-bottom: 1px dotted #444;">View Stats</a>
                 </div>
             </div>
         </div>
 
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3">
-             <button @click="rollForFirst" :disabled="isRolling" class="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 font-bold active:scale-95 transition flex items-center justify-center shadow-lg border-2 border-purple-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
-            <button @click="checkForWinner" class="bg-gray-900/90 backdrop-blur border-2 border-gray-600 text-[10px] font-bold tracking-widest rounded-full w-12 h-12 md:w-14 md:h-14 flex items-center justify-center text-gray-400 active:bg-white active:text-black transition shadow-xl">END</button>
+        <div id="game-view" class="screen hidden">
+            <div id="game-grid"></div>
+            <div id="center-menu">
+                <button class="menu-btn roll" onclick="rollFirst()">ROLL</button>
+                <button class="menu-btn" onclick="checkEnd()">END</button>
+            </div>
         </div>
+
+        <div id="modal-search" class="modal">
+            <div class="modal-box">
+                <h3 style="color:white; margin-top:0;">Select Card</h3>
+                <input id="search-bar" type="text" placeholder="Start typing..." oninput="onSearchInput(this.value)" style="background:#111; border-color:#333;">
+                <div id="search-results" style="text-align:left; display:flex; flex-direction:column; gap:5px; margin-top:10px;"></div>
+                <button class="secondary" style="width:100%; margin-top:15px;" onclick="closeModal('modal-search')">Cancel</button>
+            </div>
+        </div>
+
+        <div id="modal-stats" class="modal">
+            <div class="modal-box">
+                <h3 style="color:var(--accent); margin-top:0;">Match History</h3>
+                <div id="history-log" style="text-align:left; font-size:0.8rem; display:flex; flex-direction:column; gap:10px; margin:20px 0;">Loading...</div>
+                <button class="secondary" style="width:100%;" onclick="closeModal('modal-stats')">Close</button>
+            </div>
+        </div>
+
+        <div id="modal-win" class="modal">
+            <div class="modal-box">
+                <h2 id="winner-name" style="color:white; font-size:1.8rem; margin:0 0 5px 0;">Winner</h2>
+                <p style="color:#666; margin:0 0 20px 0; font-size:0.8rem;">HOW DID THEY WIN?</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                    <button class="secondary" onclick="saveWin('Combat')">⚔️ Combat</button>
+                    <button class="secondary" onclick="saveWin('Cmd Dmg')">🛡️ Cmd Dmg</button>
+                    <button class="secondary" onclick="saveWin('Infinite')">♾️ Infinite</button>
+                    <button class="secondary" onclick="saveWin('Poison')">☠️ Poison</button>
+                    <button class="secondary" onclick="saveWin('Alt Win')">🔮 Alt Win</button>
+                    <button class="secondary" onclick="saveWin('Conceded')">🏳️ Conceded</button>
+                </div>
+                <button style="width:100%; margin-top:15px; background:transparent; color:#666;" onclick="closeModal('modal-win')">Cancel</button>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        const { createApp, ref, onMounted, nextTick } = Vue;
-        createApp({
-            setup() {
-                const groupName = ref(localStorage.getItem('cmdr_group') || "default");
-                const players = ref([
-                    { id: 1, active: true, profileId: null, life: 40, poison: 0, bgColor: "bg-red-900", bgImage: null, rotation: "rotate-180", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
-                    { id: 2, active: true, profileId: null, life: 40, poison: 0, bgColor: "bg-blue-900", bgImage: null, rotation: "rotate-180", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
-                    { id: 3, active: true, profileId: null, life: 40, poison: 0, bgColor: "bg-green-900", bgImage: null, rotation: "", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
-                    { id: 4, active: true, profileId: null, life: 40, poison: 0, bgColor: "bg-purple-900", bgImage: null, rotation: "", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null }
-                ]);
-                const savedProfiles = ref([]);
-                const showSetup = ref(true);
-                const showNewProfile = ref(false);
-                const showWinSelector = ref(false);
-                const showStats = ref(false);
-                const showCmdSearch = ref(false);
-                const showTaxSelector = ref(false);
-                const showInstallPrompt = ref(false);
-                const taxPlayer = ref(null);
-                const cmdSearchQuery = ref("");
-                const cmdSuggestions = ref([]);
-                const cmdLoading = ref(false);
-                const activePlayerForCmd = ref(null);
-                const isSearchingPartner = ref(false);
-                const loadingStats = ref(false);
-                const isRolling = ref(false);
-                const newProfileName = ref("");
-                const winner = ref(null);
-                const pendingWinner = ref(null);
-                const wakeLockActive = ref(false);
-                const chartInstances = [];
-                let debounceTimer = null;
+        let state = {
+            group: localStorage.getItem('group') || 'default',
+            playerCount: 4,
+            players: [
+                { id:1, name:"Seat 1", life:40, poison:0, cast:0, active:true, cmd:"", part:"", img:"" },
+                { id:2, name:"Seat 2", life:40, poison:0, cast:0, active:true, cmd:"", part:"", img:"" },
+                { id:3, name:"Seat 3", life:40, poison:0, cast:0, active:true, cmd:"", part:"", img:"" },
+                { id:4, name:"Seat 4", life:40, poison:0, cast:0, active:true, cmd:"", part:"", img:"" }
+            ],
+            searchTarget: null,
+            searchIsPartner: false,
+            winner: null
+        };
+        let searchTimer = null;
 
-                // LOGIC (Minified for brevity, functionality identical)
-                const checkInstallStatus = () => { const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream; const isStandalone = window.navigator.standalone || (window.matchMedia('(display-mode: standalone)').matches); if (isIOS && !isStandalone) showInstallPrompt.value = true; };
-                const openCommanderSearch = (p, isP) => { activePlayerForCmd.value = p; isSearchingPartner.value = isP; cmdSearchQuery.value = ""; cmdSuggestions.value = []; showCmdSearch.value = true; };
-                const removePartner = (p) => { p.partnerName = null; };
-                const handleSearchInput = (e) => { const val = e.target.value; if (val.length < 2) { cmdSuggestions.value = []; return; } clearTimeout(debounceTimer); debounceTimer = setTimeout(() => { fetchAutocomplete(val); }, 300); };
-                const fetchAutocomplete = async (val) => { cmdLoading.value = true; try { const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(val)}`); const json = await res.json(); cmdSuggestions.value = json.data || []; } catch(e){} finally { cmdLoading.value = false; } };
-                const selectCommander = async (name) => { if (!activePlayerForCmd.value) return; cmdLoading.value = true; try { const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`); if (!res.ok) throw new Error("Card not found"); const card = await res.json(); if (isSearchingPartner.value) { activePlayerForCmd.value.partnerName = card.name; } else { activePlayerForCmd.value.commanderName = card.name; if (card.image_uris?.art_crop) activePlayerForCmd.value.bgImage = card.image_uris.art_crop; else if (card.card_faces?.[0]?.image_uris?.art_crop) activePlayerForCmd.value.bgImage = card.card_faces[0].image_uris.art_crop; } showCmdSearch.value = false; } catch(e){ alert("Error"); } finally { cmdLoading.value = false; } };
-                const handleCastClick = (p) => { if (p.partnerName) { taxPlayer.value = p; showTaxSelector.value = true; } else { applyTax(p, 'primary'); } };
-                const applyTax = (p, type) => { let tax = 0; if (type === 'primary') { p.commanderCasts++; if (p.commanderCasts >= 2) tax = (p.commanderCasts - 1) * 2; } else { p.partnerCasts++; if (p.partnerCasts >= 2) tax = (p.partnerCasts - 1) * 2; } if (tax > 0) { p.taxAlert = tax; setTimeout(() => { p.taxAlert = null; }, 2500); } showTaxSelector.value = false; };
-                const updateCmdDamage = (p, sid, type, amt) => { if (!p.cmdDamage[sid]) p.cmdDamage[sid] = { c1: 0, c2: 0 }; p.cmdDamage[sid][type] += amt; p.life -= amt; };
-                const isDead = (p) => { if (p.life <= 0) return true; if (p.poison >= 10) return true; for (let k in p.cmdDamage) { if (p.cmdDamage[k].c1 >= 21 || p.cmdDamage[k].c2 >= 21) return true; } return false; };
-                const rollForFirst = () => { if (isRolling.value) return; isRolling.value = true; const active = players.value.filter(p => p.active); players.value.forEach(p => p.isStarting = false); if(active.length === 0) return; let jumps = 0; let speed = 50; const loop = () => { players.value.forEach(p => p.isStarting = false); active[Math.floor(Math.random() * active.length)].isStarting = true; jumps++; if (jumps < 20) { speed += 10; setTimeout(loop, speed); } else { isRolling.value = false; } }; loop(); };
-                const switchGroup = () => { const clean = groupName.value.trim() || "default"; groupName.value = clean; localStorage.setItem('cmdr_group', clean); savedProfiles.value = []; players.value.forEach(p => p.profileId = null); loadProfiles(); };
-                const getGroupRef = (c) => window.dbMethods.collection(window.db, "groups", groupName.value, c);
-                const saveGameAndReset = async () => { if (winner.value.profileId) { const ref = window.dbMethods.doc(window.db, "groups", groupName.value, "profiles", winner.value.profileId); await window.dbMethods.updateDoc(ref, { wins: window.dbMethods.increment(1), gamesPlayed: window.dbMethods.increment(1) }); try { await window.dbMethods.addDoc(getGroupRef("match_history"), { winnerId: winner.value.profileId, winnerName: winner.value.name, winMethod: winner.value.method, commander: winner.value.commanderName, partner: winner.value.partnerName, timestamp: window.dbMethods.serverTimestamp() }); } catch(e){} } for (let p of players.value) { if (p.profileId && p.profileId !== winner.value.profileId && p.active) { const ref = window.dbMethods.doc(window.db, "groups", groupName.value, "profiles", p.profileId); await window.dbMethods.updateDoc(ref, { gamesPlayed: window.dbMethods.increment(1) }); } } resetWithoutSave(); };
-                const fetchAndShowStats = async () => { showStats.value = true; loadingStats.value = true; try { const snap = await window.dbMethods.getDocs(getGroupRef("match_history")); const matches = snap.docs.map(d => d.data()); const winsP = {}, winsM = {}; matches.forEach(m => { winsP[m.winnerName||"Unknown"] = (winsP[m.winnerName||"Unknown"]||0)+1; winsM[m.winMethod||"Unknown"] = (winsM[m.winMethod||"Unknown"]||0)+1; }); loadingStats.value = false; nextTick(() => renderCharts(winsP, winsM)); } catch(e) { loadingStats.value = false; } };
-                const renderCharts = (wp, wm) => { chartInstances.forEach(c => c.destroy()); chartInstances.length = 0; const c1 = document.getElementById('playerChart'); if(c1) chartInstances.push(new Chart(c1, { type: 'bar', data: { labels: Object.keys(wp), datasets: [{ label: 'Wins', data: Object.values(wp), backgroundColor: '#3b82f6' }] }, options: { maintainAspectRatio: false, plugins: {legend: {display:false}}, scales: { y: {beginAtZero:true, ticks:{color:'#9ca3af'}}, x:{ticks:{color:'#9ca3af'}} } } })); const c2 = document.getElementById('methodChart'); if(c2) chartInstances.push(new Chart(c2, { type: 'doughnut', data: { labels: Object.keys(wm), datasets: [{ data: Object.values(wm), backgroundColor: ['#ef4444', '#22c55e', '#a855f7', '#3b82f6', '#eab308'] }] }, options: { maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {color:'#d1d5db'} } } } })); };
-                const loadProfiles = async () => { try { const snap = await window.dbMethods.getDocs(getGroupRef("profiles")); savedProfiles.value = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); } catch (e) {} };
-                const createProfile = async () => { if (!newProfileName.value) return; try { const docRef = await window.dbMethods.addDoc(getGroupRef("profiles"), { name: newProfileName.value, wins: 0, gamesPlayed: 0 }); savedProfiles.value.push({ id: docRef.id, name: newProfileName.value, wins: 0 }); newProfileName.value = ""; showNewProfile.value = false; } catch (e) {} };
-                const resetWithoutSave = () => { winner.value = null; showSetup.value = true; players.value.forEach(p => { p.life = 40; p.poison = 0; p.cmdDamage = {}; p.showCmd = false; p.showPoison = false; p.commanderCasts = 0; p.partnerCasts = 0; p.taxAlert = null; p.isStarting = false; p.commanderName = null; p.partnerName = null; }); loadProfiles(); };
-                const initiateWinSequence = (p) => { pendingWinner.value = p; pendingWinner.value.name = getProfileName(p); showWinSelector.value = true; };
-                const finalizeWin = (m) => { winner.value = pendingWinner.value; winner.value.method = m; showWinSelector.value = false; pendingWinner.value = null; };
-                const activateWakeLock = async () => { if ('wakeLock' in navigator) try { await navigator.wakeLock.request('screen'); wakeLockActive.value = true; } catch (e) {} };
-                const startGame = () => { showSetup.value = false; activateWakeLock(); };
-                const updateLife = (p, a) => p.life += a;
-                const getProfileName = (p) => { if (!p.profileId) return `Guest ${p.id}`; const pf = savedProfiles.value.find(x => x.id === p.profileId); return pf ? pf.name : "Unknown"; };
-                const getOpponents = (myId) => players.value.filter(p => p.id !== myId && p.active);
-                const checkForWinner = () => { const alive = players.value.filter(p => !isDead(p) && p.active); if (alive.length === 1) initiateWinSequence(alive[0]); else if (alive.length === 0) { if(confirm("Reset?")) resetWithoutSave(); } else { if(confirm("Force end?")) resetWithoutSave(); } };
-                const uploadBackground = (e, p) => { const f = e.target.files[0]; if (f) { const r = new FileReader(); r.onload = (x) => p.bgImage = x.target.result; r.readAsDataURL(f); } };
+        document.getElementById('group-input').value = state.group;
+        renderSeats();
 
-                onMounted(() => { loadProfiles(); document.addEventListener('touchstart', activateWakeLock, { once: true }); checkInstallStatus(); });
+        function loadGroup() {
+            state.group = document.getElementById('group-input').value;
+            localStorage.setItem('group', state.group);
+            alert("Group Set: " + state.group);
+        }
 
-                return { players, savedProfiles, showSetup, showNewProfile, newProfileName, winner, wakeLockActive, showWinSelector, pendingWinner, showStats, loadingStats, groupName, isRolling, rollForFirst, switchGroup, createProfile, startGame, updateLife, updateCmdDamage, isDead, getProfileName, getOpponents, checkForWinner, saveGameAndReset, resetWithoutSave, uploadBackground, activateWakeLock, initiateWinSequence, finalizeWin, fetchAndShowStats, showCmdSearch, cmdSearchQuery, cmdLoading, openCommanderSearch, cmdSuggestions, handleSearchInput, selectCommander, isSearchingPartner, removePartner, showTaxSelector, taxPlayer, applyTax, handleCastClick, showInstallPrompt };
+        function setPlayers(n) {
+            state.playerCount = n;
+            [2,3,4].forEach(i => {
+                const btn = document.getElementById(`btn-p${i}`);
+                if(i===n) btn.className = 'active';
+                else btn.className = 'secondary';
+            });
+            state.players.forEach(p => p.active = false);
+            if(n===4) state.players.forEach(p => p.active = true);
+            else if(n===3) { state.players[0].active=true; state.players[1].active=true; state.players[2].active=true; }
+            else { state.players[0].active=true; state.players[2].active=true; } // 1v1 Split
+            renderSeats();
+        }
+
+        function renderSeats() {
+            const list = document.getElementById('seats-list');
+            list.innerHTML = '';
+            state.players.forEach(p => {
+                if(!p.active) return;
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.innerHTML = `
+                    <div class="row" style="margin-bottom:8px; justify-content:space-between;">
+                        <span style="font-size:0.7rem; font-weight:bold; color:#555;">SEAT ${p.id}</span>
+                        <span style="font-size:0.7rem; color:#333; cursor:pointer;" onclick="resetSeat(${p.id})">CLEAR</span>
+                    </div>
+                    <div class="row">
+                        <input type="text" value="${p.name}" onchange="updateName(${p.id}, this.value)" style="font-weight:bold;">
+                    </div>
+                    <div class="row" style="margin-top:8px;">
+                        <button class="secondary" style="flex:1; text-align:left; overflow:hidden; font-size:0.8rem; padding:10px;" onclick="openSearch(${p.id}, false)">
+                            ${p.cmd ? p.cmd : '<span style="color:#666">🔍 Select Commander...</span>'}
+                        </button>
+                    </div>
+                    ${p.part ? `
+                    <div class="row" style="margin-top:5px;">
+                        <button class="secondary" style="flex:1; text-align:left; overflow:hidden; font-size:0.8rem; padding:8px;" onclick="openSearch(${p.id}, true)">${p.part}</button>
+                        <button style="background:none; color:var(--danger); padding:0 8px;" onclick="clearPart(${p.id})">✕</button>
+                    </div>` : `
+                    <div style="text-align:right; margin-top:5px;">
+                        <span style="color:var(--accent); font-size:0.7rem; cursor:pointer; font-weight:bold;" onclick="openSearch(${p.id}, true)">+ PARTNER</span>
+                    </div>`}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function updateName(id, val) { state.players.find(p=>p.id===id).name = val; }
+        function resetSeat(id) {
+            const p = state.players.find(x=>x.id===id);
+            p.name = `Seat ${id}`; p.cmd=""; p.part=""; p.img="";
+            renderSeats();
+        }
+        function clearPart(id) { state.players.find(p=>p.id===id).part = ""; renderSeats(); }
+
+        function openSearch(id, isPart) {
+            state.searchTarget = id;
+            state.searchIsPartner = isPart;
+            document.getElementById('search-bar').value = '';
+            document.getElementById('search-results').innerHTML = '';
+            document.getElementById('modal-search').classList.add('active');
+            document.getElementById('search-bar').focus();
+        }
+        function onSearchInput(val) {
+            if(val.length < 2) return;
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${val}`);
+                    const json = await res.json();
+                    const div = document.getElementById('search-results');
+                    div.innerHTML = '';
+                    json.data.forEach(name => {
+                        const btn = document.createElement('div');
+                        btn.style.padding = '12px';
+                        btn.style.borderBottom = '1px solid #333';
+                        btn.style.cursor = 'pointer';
+                        btn.style.color = '#ccc';
+                        btn.innerText = name;
+                        btn.onclick = () => fetchCard(name);
+                        div.appendChild(btn);
+                    });
+                } catch(e){}
+            }, 300);
+        }
+        async function fetchCard(name) {
+            try {
+                const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
+                const card = await res.json();
+                const p = state.players.find(x=>x.id === state.searchTarget);
+
+                if(state.searchIsPartner) p.part = card.name;
+                else {
+                    p.cmd = card.name;
+                    p.img = card.image_uris?.art_crop || card.card_faces?.[0]?.image_uris?.art_crop || "";
+                }
+                renderSeats();
+                closeModal('modal-search');
+            } catch(e) { alert("Error loading card"); }
+        }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        function launchGame() {
+            document.getElementById('setup-view').classList.add('hidden');
+            document.getElementById('game-view').classList.remove('hidden');
+            if(navigator.wakeLock) navigator.wakeLock.request('screen').catch(()=>{});
+            buildGrid();
+        }
+
+        function buildGrid() {
+            const grid = document.getElementById('game-grid');
+            grid.innerHTML = '';
+
+            const active = state.players.filter(p => p.active);
+            let rows = [];
+
+            if(state.playerCount === 4) { rows = [[active[0], active[1]], [active[2], active[3]]]; }
+            else if(state.playerCount === 3) { rows = [[active[0], active[1]], [active[2]]]; }
+            else { rows = [[active[0]], [active[1]]]; }
+
+            rows.forEach((rowPlayers) => {
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'player-row';
+
+                rowPlayers.forEach(p => {
+                    const seat = document.createElement('div');
+                    seat.className = 'seat';
+                    seat.id = `seat-${p.id}`;
+                    if(p.img) seat.style.backgroundImage = `url(${p.img})`;
+
+                    const cmdText = p.cmd ? `<div style="font-size:0.7rem; color:#ccc; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%;">${p.cmd}</div>` : '';
+
+                    seat.innerHTML = `
+                        <div class="seat-overlay"></div>
+                        <div class="seat-ui">
+                            <div style="text-align:center; width:100%;">
+                                <div class="name-tag" style="display:inline-block;">${p.name}</div>
+                                ${cmdText}
+                            </div>
+                            <div class="life-group">
+                                <div class="life-btn" onclick="modLife(${p.id}, -1)">-</div>
+                                <div class="life-total ${p.life<=10?'danger':''}" id="life-${p.id}">${p.life}</div>
+                                <div class="life-btn" onclick="modLife(${p.id}, 1)">+</div>
+                            </div>
+                            <div class="tools">
+                                <button class="tool" onclick="modPoison(${p.id})">☠️<div class="counter" id="poi-${p.id}" style="display:none">0</div></button>
+                                <button class="tool" onclick="modCast(${p.id})">✨<div class="counter" id="cast-${p.id}" style="display:none">0</div></button>
+                                <button class="tool" onclick="preWin(${p.id})">🏆</button>
+                            </div>
+                        </div>
+                    `;
+                    rowDiv.appendChild(seat);
+                });
+                grid.appendChild(rowDiv);
+            });
+        }
+
+        function modLife(id, amt) {
+            const p = state.players.find(x=>x.id===id);
+            p.life += amt;
+            const el = document.getElementById(`life-${id}`);
+            el.innerText = p.life;
+            el.className = `life-total ${p.life<=10?'danger':''}`;
+            if(p.life <= 0) document.getElementById(`seat-${id}`).style.filter = "grayscale(100%)";
+        }
+        function modPoison(id) {
+            const p = state.players.find(x=>x.id===id);
+            p.poison++;
+            const el = document.getElementById(`poi-${id}`);
+            el.innerText = p.poison;
+            el.style.display = 'flex';
+            if(p.poison >= 10) document.getElementById(`seat-${id}`).style.filter = "grayscale(100%)";
+        }
+        function modCast(id) {
+            const p = state.players.find(x=>x.id===id);
+            p.cast++;
+            const el = document.getElementById(`cast-${id}`);
+            el.innerText = p.cast;
+            el.style.display = 'flex';
+        }
+
+        // --- FIXED ROLL FUNCTION ---
+        function rollFirst() {
+            const active = state.players.filter(p => p.active);
+            // Clear prev
+            active.forEach(p => {
+                const el = document.getElementById(`seat-${p.id}`);
+                if(el) el.classList.remove('glow-active');
+            });
+
+            let i = 0;
+            const max = 20;
+            const timer = setInterval(() => {
+                // Clear all
+                active.forEach(p => {
+                    const el = document.getElementById(`seat-${p.id}`);
+                    if(el) el.classList.remove('glow-active');
+                });
+
+                // Highlight random
+                const r = Math.floor(Math.random() * active.length);
+                const target = document.getElementById(`seat-${active[r].id}`);
+                if(target) target.classList.add('glow-active');
+
+                i++;
+                if(i > max) clearInterval(timer);
+            }, 100);
+        }
+
+        function checkWinner() {
+            const alive = state.players.filter(p => p.active && p.life > 0 && p.poison < 10);
+            if(alive.length === 1) preWin(alive[0].id);
+            else if(confirm("Reset Game?")) resetGame();
+        }
+
+        function preWin(id) {
+            state.winner = state.players.find(x=>x.id===id);
+            document.getElementById('winner-name').innerText = state.winner.name + " Wins!";
+            document.getElementById('modal-win').classList.add('active');
+        }
+
+        async function saveWin(method) {
+            closeModal('modal-win');
+            if(window.isOnline && window.db) {
+                try {
+                    await window.dbMethods.addDoc(window.dbMethods.collection(window.db, "groups", state.group, "matches"), {
+                        winner: state.winner.name,
+                        cmd: state.winner.cmd,
+                        method: method,
+                        date: window.dbMethods.serverTimestamp()
+                    });
+                } catch(e){}
             }
-        }).mount('#app');
+            alert("Game Over! " + state.winner.name + " wins.");
+            resetGame();
+        }
+
+        function resetGame() {
+            state.players.forEach(p => { p.life=40; p.poison=0; p.cast=0; });
+            document.getElementById('game-view').classList.add('hidden');
+            document.getElementById('setup-view').classList.remove('hidden');
+        }
+
+        async function showStats() {
+            const el = document.getElementById('history-log');
+            el.innerHTML = "Loading...";
+            document.getElementById('modal-stats').classList.add('active');
+            if(!window.isOnline) { el.innerHTML = "Offline Mode - No stats."; return; }
+
+            try {
+                const q = window.dbMethods.query(window.dbMethods.collection(window.db, "groups", state.group, "matches"), window.dbMethods.orderBy("date", "desc"), window.dbMethods.limit(10));
+                const snap = await window.dbMethods.getDocs(q);
+                let html = "";
+                if(snap.empty) { el.innerHTML = "No matches found."; return; }
+
+                snap.forEach(d => {
+                    const data = d.data();
+                    const date = data.date ? new Date(data.date.toDate()).toLocaleDateString() : '';
+                    html += `<div style="border-bottom:1px solid #333; padding:8px 0;">
+                        <div style="display:flex; justify-content:space-between;">
+                            <span style="color:var(--accent); font-weight:bold;">${data.winner}</span>
+                            <span style="font-size:0.7rem; color:var(--success);">${data.method}</span>
+                        </div>
+                        <div style="font-size:0.7rem; color:#666;">${data.cmd || 'No Cmd'} • ${date}</div>
+                    </div>`;
+                });
+                el.innerHTML = html;
+            } catch(e) { el.innerHTML = "Error loading stats."; }
+        }
     </script>
 </body>
 </html>
