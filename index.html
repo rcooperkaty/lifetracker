@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Commander">
+    <title>Commander Tracker Pro</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&display=swap" rel="stylesheet">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, doc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyC8sMzkkeF-6aBxi8n406hqD8-N0mAC-00",
+            authDomain: "commandertracker-5b4c5.firebaseapp.com",
+            projectId: "commandertracker-5b4c5",
+            storageBucket: "commandertracker-5b4c5.firebasestorage.app",
+            messagingSenderId: "591105293707",
+            appId: "1:591105293707:web:d0dc9da4caf484c941c38e",
+            measurementId: "G-6WZSTXS55D"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        window.db = getFirestore(app);
+        window.dbMethods = { collection, addDoc, getDocs, updateDoc, doc, increment, serverTimestamp };
+    </script>
+
+    <style>
+        body { font-family: 'Chakra Petch', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; overscroll-behavior: none; user-select: none; -webkit-user-select: none; background-color: #000; }
+        .ios-height { height: 100dvh; }
+        .safe-padding { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+        ::-webkit-scrollbar { display: none; }
+        .text-shadow { text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000; }
+        .bg-glass { background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        @keyframes popIn { 0% { transform: scale(0.5); opacity: 0; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .glow-border { border-color: #fbbf24 !important; box-shadow: inset 0 0 20px rgba(251, 191, 36, 0.5); z-index: 50; }
+    </style>
+</head>
+<body class="bg-black text-white overflow-hidden">
+
+    <div id="app" class="ios-height w-screen relative safe-padding bg-black">
+        <div v-if="!wakeLockActive" @click="activateWakeLock" class="absolute inset-0 z-[200] bg-transparent"></div>
+
+        <div v-if="showSetup" class="absolute inset-0 bg-gray-900/95 backdrop-blur z-[100] flex flex-col items-center justify-center p-6 safe-padding">
+            <h1 class="text-3xl font-bold mb-2 text-blue-400">Commander Tracker</h1>
+
+            <div class="flex items-center gap-2 mb-4 bg-gray-800 p-2 rounded-lg border border-gray-700 w-full max-w-lg">
+                <span class="text-gray-400 text-xs font-bold uppercase pl-2">Group:</span>
+                <input v-model="groupName" @change="switchGroup" class="bg-transparent text-white font-bold outline-none flex-1 placeholder-gray-500" placeholder="Enter Group Name">
+                <button @click="switchGroup" class="bg-blue-600 px-3 py-1 rounded text-xs font-bold">LOAD</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 w-full max-w-lg mb-4">
+                <div v-for="(player, idx) in players" :key="player.id" class="bg-gray-800 p-2 rounded flex flex-col gap-1 border border-gray-700 relative">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="text-[10px] text-blue-300 font-bold uppercase tracking-wider">Seat {{ idx + 1 }}</label>
+                    </div>
+                    <select v-model="player.profileId" class="bg-black p-1 rounded border border-gray-600 text-white text-xs outline-none w-full mb-1">
+                        <option :value="null">Guest</option>
+                        <option v-for="p in savedProfiles" :value="p.id">{{ p.name }}</option>
+                    </select>
+
+                    <button @click="openCommanderSearch(player, false)" class="flex items-center gap-1 bg-gray-900 border border-gray-600 rounded p-1.5 hover:bg-gray-700 transition">
+                        <span class="text-[10px] truncate w-full text-left text-gray-400">{{ player.commanderName || "Select Commander..." }}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </button>
+
+                    <div v-if="player.partnerName" class="flex items-center gap-1">
+                        <button @click="openCommanderSearch(player, true)" class="flex-1 flex items-center gap-1 bg-gray-900 border border-gray-600 rounded p-1.5 hover:bg-gray-700 transition">
+                            <span class="text-[10px] truncate w-full text-left text-gray-400">{{ player.partnerName }}</span>
+                        </button>
+                        <button @click="removePartner(player)" class="text-red-500 text-xs px-1">✕</button>
+                    </div>
+                    <button v-else @click="openCommanderSearch(player, true)" class="text-[10px] text-blue-400 text-left pl-1 hover:text-blue-300">+ Add Partner</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 w-full max-w-lg mb-4">
+                <button @click="startGame" class="w-full bg-blue-600 py-4 rounded-xl font-bold text-lg hover:bg-blue-500 shadow-lg active:scale-95 transition">START GAME</button>
+                <button @click="showNewProfile = true" class="w-full py-3 rounded-xl bg-gray-700 hover:bg-gray-600 font-bold active:scale-95 transition text-sm">New Profile</button>
+            </div>
+            <button @click="fetchAndShowStats" class="text-gray-400 underline text-sm mt-2">View Stats & Graphs</button>
+        </div>
+
+        <div v-if="showCmdSearch" class="absolute inset-0 bg-black/95 z-[160] flex flex-col p-6 safe-padding">
+            <h2 class="text-xl font-bold mb-4 text-white text-center">{{ isSearchingPartner ? 'Find Partner' : 'Find Commander' }}</h2>
+            <div class="relative w-full max-w-sm mx-auto">
+                <input v-model="cmdSearchQuery" @input="handleSearchInput" placeholder="Start typing..." class="w-full bg-gray-800 p-4 rounded-xl border border-gray-600 text-white text-lg focus:border-blue-500 outline-none" autofocus>
+                <div v-if="cmdSuggestions.length > 0" class="absolute top-full left-0 right-0 bg-gray-800 border border-gray-700 mt-2 rounded-xl max-h-60 overflow-y-auto z-50 shadow-2xl">
+                    <div v-for="cardName in cmdSuggestions" @click="selectCommander(cardName)" class="p-4 border-b border-gray-700 hover:bg-gray-700 text-gray-200">{{ cardName }}</div>
+                </div>
+                <div v-if="cmdLoading" class="mt-4 text-center text-gray-500">Searching...</div>
+            </div>
+            <button @click="showCmdSearch = false" class="mt-8 text-gray-400 underline text-center">Cancel</button>
+        </div>
+
+        <div v-if="showTaxSelector" class="absolute inset-0 bg-black/90 z-[140] flex items-center justify-center p-6 animate-fade-in">
+            <div class="bg-gray-800 p-6 rounded-2xl w-full max-w-xs text-center">
+                <h3 class="text-xl font-bold mb-4">Cast Which Commander?</h3>
+                <div class="flex flex-col gap-3">
+                    <button @click="applyTax(taxPlayer, 'primary')" class="bg-blue-600 p-4 rounded-xl font-bold hover:bg-blue-500">{{ taxPlayer.commanderName }}</button>
+                    <button @click="applyTax(taxPlayer, 'partner')" class="bg-purple-600 p-4 rounded-xl font-bold hover:bg-purple-500">{{ taxPlayer.partnerName }}</button>
+                </div>
+                <button @click="showTaxSelector = false" class="mt-4 text-gray-400">Cancel</button>
+            </div>
+        </div>
+
+        <div v-if="showStats" class="absolute inset-0 bg-black z-[120] flex flex-col p-6 overflow-y-auto safe-padding"><div class="flex justify-between items-center mb-6"><div><h2 class="text-2xl font-bold text-blue-400">Match Statistics</h2><span class="text-xs text-gray-500 uppercase">Group: {{ groupName }}</span></div><button @click="showStats = false" class="text-gray-400 text-lg">Close</button></div><div v-if="loadingStats" class="text-center text-gray-500 mt-20">Loading data...</div><div v-else class="flex flex-col gap-8 pb-10"><div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h3 class="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Wins Leaderboard</h3><div class="relative h-64 w-full"><canvas id="playerChart"></canvas></div></div><div class="bg-gray-900 p-4 rounded-xl border border-gray-800"><h3 class="text-sm font-bold text-gray-400 mb-4 uppercase tracking-wider">Win Condition Meta</h3><div class="relative h-64 w-full flex justify-center"><canvas id="methodChart"></canvas></div></div></div></div>
+        <div v-if="showNewProfile" class="absolute inset-0 bg-black/90 z-[110] flex items-center justify-center p-6"><div class="bg-gray-800 p-6 rounded-2xl w-full max-w-sm border border-gray-600"><h3 class="text-xl mb-4 font-bold">New Profile</h3><input v-model="newProfileName" placeholder="Enter Name" class="w-full bg-black p-4 rounded-xl mb-4 border border-gray-600 text-white text-lg"><div class="flex justify-end gap-3"><button @click="showNewProfile = false" class="px-4 py-3 text-gray-400">Cancel</button><button @click="createProfile" class="bg-blue-600 px-6 py-3 rounded-xl font-bold">Save</button></div></div></div>
+        <div v-if="showWinSelector" class="absolute inset-0 bg-black/95 z-[150] flex flex-col items-center justify-center p-6 animate-fade-in safe-padding"><h2 class="text-2xl text-gray-400 mb-2">Declaring Winner</h2><h1 class="text-4xl text-white font-bold mb-8">{{ pendingWinner?.name }}</h1><p class="text-blue-400 mb-4 text-sm font-bold uppercase tracking-widest">Select Win Condition</p><div class="grid grid-cols-2 gap-3 w-full max-w-md"><button @click="finalizeWin('Combat Damage')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-red-900/50 hover:border-red-500 transition font-bold">⚔️ Combat</button><button @click="finalizeWin('Commander Damage')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-red-900/50 hover:border-red-500 transition font-bold">🛡️ Cmd Dmg</button><button @click="finalizeWin('Alternate Win')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-blue-900/50 hover:border-blue-500 transition font-bold">🔮 Alt Win</button><button @click="finalizeWin('Infinite Combo')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-purple-900/50 hover:border-purple-500 transition font-bold">♾️ Infinite</button><button @click="finalizeWin('Poison / Infect')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-green-900/50 hover:border-green-500 transition font-bold">☠️ Poison</button><button @click="finalizeWin('Mill')" class="bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-blue-900/50 hover:border-blue-500 transition font-bold">📚 Mill</button><button @click="finalizeWin('Concession')" class="col-span-2 bg-gray-800 p-4 rounded-xl border border-gray-700 hover:bg-gray-700 transition font-bold text-gray-400">🏳️ Concession</button></div><button @click="showWinSelector = false" class="mt-8 text-gray-500 underline">Cancel</button></div>
+
+        <div v-if="winner" class="absolute inset-0 bg-black/95 z-[90] flex flex-col items-center justify-center animate-fade-in safe-padding">
+            <h1 class="text-5xl text-yellow-500 font-bold mb-2 drop-shadow-[0_0_15px_rgba(234,179,8,0.5)]">VICTORY</h1>
+            <h2 class="text-4xl text-white mb-2 text-center">{{ winner.name }} wins!</h2>
+            <div class="text-gray-400 mb-2 text-center text-sm">
+                {{ winner.commanderName }} <span v-if="winner.partnerName">+ {{ winner.partnerName }}</span>
+            </div>
+            <div class="bg-gray-800 px-4 py-1 rounded-full text-xs font-bold text-gray-400 uppercase tracking-widest mb-10">via {{ winner.method }}</div>
+            <button @click="saveGameAndReset" class="bg-blue-600 px-10 py-5 rounded-full text-xl font-bold shadow-lg active:scale-95 transition">Save & Reset</button>
+            <button @click="resetWithoutSave" class="mt-8 text-gray-500 text-sm p-4">Reset without saving</button>
+        </div>
+
+        <div class="grid grid-cols-2 grid-rows-2 h-full w-full">
+            <div v-for="player in players" :key="player.id"
+                 class="relative border border-gray-800 flex flex-col items-center justify-center bg-cover bg-center overflow-hidden transition-all duration-300"
+                 :class="[player.bgColor, player.rotation, player.isStarting ? 'glow-border' : '']"
+                 :style="{ backgroundImage: player.bgImage ? 'url(' + player.bgImage + ')' : '' }">
+
+                <div class="absolute inset-0 bg-black/30 pointer-events-none"></div>
+                <div v-if="player.taxAlert" class="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-pop" @click="player.taxAlert = null">
+                    <div class="bg-yellow-500 text-black px-6 py-4 rounded-xl border-4 border-yellow-300 shadow-2xl transform rotate-0 text-center">
+                        <div class="text-xs font-bold uppercase tracking-widest mb-1">Commander Tax</div><div class="text-4xl font-bold whitespace-nowrap">PAY {{ player.taxAlert }}</div><div class="text-xs font-bold mt-1 opacity-75">COLORLESS</div>
+                    </div>
+                </div>
+                <div v-if="isDead(player)" class="absolute inset-0 bg-red-950/90 z-20 flex flex-col items-center justify-center"><span class="text-2xl font-bold text-red-500 border-4 border-red-500 p-3 rounded rotate-12 mb-2">ELIMINATED</span><span v-if="player.poison >= 10" class="text-green-400 font-bold text-sm uppercase tracking-widest">Poisoned</span></div>
+
+                <div class="relative z-10 w-full h-full flex flex-col items-center justify-center p-2 gap-1 no-select">
+                    <div class="flex flex-col items-center max-w-[80%]">
+                        <div class="flex items-center gap-2">
+                            <span v-if="player.isStarting" class="bg-yellow-500 text-black text-[8px] font-bold px-1.5 py-0.5 rounded shadow-lg animate-pop">STARTS</span>
+                            <div class="text-lg font-bold text-shadow text-gray-200 opacity-90 truncate">{{ getProfileName(player) }}</div>
+                        </div>
+                        <div v-if="player.commanderName" class="flex flex-col gap-0.5 w-full">
+                            <div class="text-[9px] text-gray-300 bg-black/40 px-2 py-0.5 rounded truncate w-full text-center">{{ player.commanderName }}</div>
+                            <div v-if="player.partnerName" class="text-[9px] text-gray-300 bg-black/40 px-2 py-0.5 rounded truncate w-full text-center">+ {{ player.partnerName }}</div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-2 w-full mt-2">
+                        <button @click="updateLife(player, -1)" class="w-20 h-20 bg-glass rounded-full flex items-center justify-center text-4xl border border-white/10 active:bg-red-500/40 active:scale-95 transition touch-manipulation pb-2">-</button>
+                        <span class="text-7xl font-bold text-shadow tabular-nums w-32 text-center" :class="{'text-red-500': player.life <= 10}">{{ player.life }}</span>
+                        <button @click="updateLife(player, 1)" class="w-20 h-20 bg-glass rounded-full flex items-center justify-center text-4xl border border-white/10 active:bg-green-500/40 active:scale-95 transition touch-manipulation pb-2">+</button>
+                    </div>
+
+                    <div class="flex gap-2 mt-3">
+                        <button @click="player.showCmd = true" class="relative p-3 bg-glass rounded-xl border border-white/10 active:bg-blue-600/60 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg></button>
+                        <button @click="player.showPoison = true" class="relative p-3 bg-glass rounded-xl border border-white/10 active:bg-green-600/60 transition group"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg><span v-if="player.poison > 0" class="absolute -top-2 -right-2 bg-green-500 text-black text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border border-black shadow">{{ player.poison }}</span></button>
+
+                        <button @click="handleCastClick(player)" class="relative p-3 bg-glass rounded-xl border border-white/10 active:bg-yellow-600/60 transition group">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clip-rule="evenodd" /></svg>
+                            <span v-if="player.commanderCasts > 0 || player.partnerCasts > 0" class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full border border-black"></span>
+                        </button>
+
+                        <button @click="initiateWinSequence(player)" class="relative p-3 bg-glass rounded-xl border border-white/10 active:bg-green-600/60 transition"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-500" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M5.166 2.621v.858c-1.035.148-2.059.33-3 .542.863 4.909 2.7 9.681 5.375 13.809.725-.688 1.458-1.458 2.051-2.179a17.394 17.394 0 00-2.43-12.727c.569-.126 1.155-.213 1.763-.257l.075-.005v-.04zM12 2.25c.789 0 1.57.07 2.333.204l-.074.005c.616.044 1.209.132 1.778.26a17.392 17.392 0 00-2.43 12.724c.594.72 1.328 1.49 2.052 2.179 2.675-4.128 4.512-8.9 5.375-13.81-1.014-.22-2.115-.41-3.238-.553V2.25H12zM10.875 18.75a3.375 3.375 0 003.375-3.375c-.71 0-1.396.113-2.043.318a4.873 4.873 0 00-.773.308l-.078.038a5.55 5.55 0 00-.077-.038 4.877 4.877 0 00-.774-.308A5.62 5.62 0 008.625 15.375a3.375 3.375 0 002.25 3.375z" clip-rule="evenodd" /><path d="M12 22.5a3.375 3.375 0 002.625-5.636 5.253 5.253 0 01-1.464-.403.957.957 0 00-1.161-.005 5.249 5.249 0 01-1.464.408A3.375 3.375 0 0012 22.5z" /></svg></button>
+                        <label class="p-3 bg-glass rounded-xl border border-white/10 active:bg-purple-600/60 transition cursor-pointer"><input type="file" class="hidden" accept="image/*" @change="(e) => uploadBackground(e, player)"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></label>
+                    </div>
+                </div>
+
+                <div v-if="player.showPoison" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showPoison = false">
+                    <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-2"><span class="font-bold text-green-400 text-sm uppercase tracking-wider">Poison Counters</span><button @click="player.showPoison = false" class="text-green-400 font-bold text-xs bg-green-900/20 px-3 py-1 rounded">CLOSE</button></div>
+                    <div class="flex items-center justify-center gap-6 h-full pb-10"><button @click="player.poison = Math.max(0, player.poison - 1)" class="w-20 h-20 bg-gray-700 rounded-full text-4xl active:bg-green-600">-</button><span class="text-8xl font-bold text-green-500 tabular-nums">{{ player.poison }}</span><button @click="player.poison++" class="w-20 h-20 bg-gray-700 rounded-full text-4xl active:bg-green-600">+</button></div>
+                </div>
+
+                <div v-if="player.showCmd" class="absolute inset-0 bg-gray-900/95 z-30 flex flex-col p-4 animate-fade-in" @click.self="player.showCmd = false">
+                     <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2"><span class="font-bold text-gray-300 text-xs uppercase">Cmd Damage Received</span><button @click="player.showCmd = false" class="text-red-400 font-bold text-xs bg-red-900/20 px-3 py-1 rounded">CLOSE</button></div>
+                    <div class="flex flex-col gap-2 overflow-y-auto h-full">
+                        <div v-for="opponent in getOpponents(player.id)" :key="opponent.id" class="flex flex-col gap-1 bg-gray-800 p-2 rounded border border-gray-700">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold w-1/3 truncate text-gray-400">{{ opponent.commanderName || getProfileName(opponent) }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button @click="updateCmdDamage(player, opponent.id, 'c1', -1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">-</button>
+                                    <span class="text-lg font-bold w-6 text-center" :class="{'text-red-500': (player.cmdDamage[opponent.id]?.c1 || 0) >= 21}">{{ player.cmdDamage[opponent.id]?.c1 || 0 }}</span>
+                                    <button @click="updateCmdDamage(player, opponent.id, 'c1', 1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">+</button>
+                                </div>
+                            </div>
+                            <div v-if="opponent.partnerName" class="flex items-center justify-between border-t border-gray-700 pt-1 mt-1">
+                                <span class="text-xs font-bold w-1/3 truncate text-gray-500">{{ opponent.partnerName }}</span>
+                                <div class="flex items-center gap-3">
+                                    <button @click="updateCmdDamage(player, opponent.id, 'c2', -1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">-</button>
+                                    <span class="text-lg font-bold w-6 text-center" :class="{'text-red-500': (player.cmdDamage[opponent.id]?.c2 || 0) >= 21}">{{ player.cmdDamage[opponent.id]?.c2 || 0 }}</span>
+                                    <button @click="updateCmdDamage(player, opponent.id, 'c2', 1)" class="w-8 h-8 bg-gray-700 rounded flex items-center justify-center text-lg active:bg-gray-600">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-40 flex flex-col items-center gap-3">
+             <button @click="rollForFirst" :disabled="isRolling" class="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-500 font-bold active:scale-95 transition flex items-center justify-center shadow-lg border-2 border-purple-400"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></button>
+            <button @click="checkForWinner" class="bg-gray-900/90 backdrop-blur border-2 border-gray-600 text-[10px] font-bold tracking-widest rounded-full w-14 h-14 flex items-center justify-center text-gray-400 active:bg-white active:text-black transition shadow-xl">END</button>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const groupName = ref(localStorage.getItem('cmdr_group') || "default");
+                const players = ref([
+                    { id: 1, profileId: null, life: 40, poison: 0, bgColor: "bg-red-900", bgImage: null, rotation: "rotate-180", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
+                    { id: 2, profileId: null, life: 40, poison: 0, bgColor: "bg-blue-900", bgImage: null, rotation: "rotate-180", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
+                    { id: 3, profileId: null, life: 40, poison: 0, bgColor: "bg-green-900", bgImage: null, rotation: "", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null },
+                    { id: 4, profileId: null, life: 40, poison: 0, bgColor: "bg-purple-900", bgImage: null, rotation: "", showCmd: false, showPoison: false, cmdDamage: {}, commanderCasts: 0, partnerCasts: 0, taxAlert: null, isStarting: false, commanderName: null, partnerName: null }
+                ]);
+
+                const savedProfiles = ref([]);
+                const showSetup = ref(true);
+                const showNewProfile = ref(false);
+                const showWinSelector = ref(false);
+                const showStats = ref(false);
+                const showCmdSearch = ref(false);
+                const showTaxSelector = ref(false); // NEW
+                const taxPlayer = ref(null);
+
+                const cmdSearchQuery = ref("");
+                const cmdSuggestions = ref([]);
+                const cmdLoading = ref(false);
+                const activePlayerForCmd = ref(null);
+                const isSearchingPartner = ref(false); // Track if we are searching for partner
+
+                const loadingStats = ref(false);
+                const isRolling = ref(false);
+                const newProfileName = ref("");
+                const winner = ref(null);
+                const pendingWinner = ref(null);
+                const wakeLockActive = ref(false);
+                const chartInstances = [];
+                let debounceTimer = null;
+
+                // --- AUTOCOMPLETE ---
+                const openCommanderSearch = (player, isPartner) => {
+                    activePlayerForCmd.value = player;
+                    isSearchingPartner.value = isPartner;
+                    cmdSearchQuery.value = "";
+                    cmdSuggestions.value = [];
+                    showCmdSearch.value = true;
+                };
+
+                const removePartner = (player) => {
+                    player.partnerName = null;
+                };
+
+                const handleSearchInput = (e) => {
+                    const val = e.target.value;
+                    if (val.length < 2) { cmdSuggestions.value = []; return; }
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => { fetchAutocomplete(val); }, 300);
+                };
+
+                const fetchAutocomplete = async (val) => {
+                    cmdLoading.value = true;
+                    try {
+                        const res = await fetch(`https://api.scryfall.com/cards/autocomplete?q=${encodeURIComponent(val)}`);
+                        const json = await res.json();
+                        cmdSuggestions.value = json.data || [];
+                    } catch(e) { console.error(e); } finally { cmdLoading.value = false; }
+                };
+
+                const selectCommander = async (name) => {
+                    if (!activePlayerForCmd.value) return;
+                    cmdLoading.value = true;
+                    try {
+                         const res = await fetch(`https://api.scryfall.com/cards/named?exact=${encodeURIComponent(name)}`);
+                        if (!res.ok) throw new Error("Card not found");
+                        const card = await res.json();
+
+                        if (isSearchingPartner.value) {
+                             activePlayerForCmd.value.partnerName = card.name;
+                        } else {
+                            activePlayerForCmd.value.commanderName = card.name;
+                            // Set Background (Only for Primary)
+                            if (card.image_uris && card.image_uris.art_crop) {
+                                activePlayerForCmd.value.bgImage = card.image_uris.art_crop;
+                            } else if (card.card_faces && card.card_faces[0].image_uris) {
+                                activePlayerForCmd.value.bgImage = card.card_faces[0].image_uris.art_crop;
+                            }
+                        }
+                        showCmdSearch.value = false;
+                    } catch(e) { alert("Error fetching card details."); } finally { cmdLoading.value = false; }
+                };
+
+                // --- CAST LOGIC (PARTNERS) ---
+                const handleCastClick = (player) => {
+                    if (player.partnerName) {
+                        // Ask which one
+                        taxPlayer.value = player;
+                        showTaxSelector.value = true;
+                    } else {
+                        applyTax(player, 'primary');
+                    }
+                };
+
+                const applyTax = (player, type) => {
+                    let tax = 0;
+                    if (type === 'primary') {
+                        player.commanderCasts++;
+                        if (player.commanderCasts >= 2) tax = (player.commanderCasts - 1) * 2;
+                    } else {
+                        player.partnerCasts++;
+                        if (player.partnerCasts >= 2) tax = (player.partnerCasts - 1) * 2;
+                    }
+
+                    if (tax > 0) {
+                        player.taxAlert = tax;
+                        setTimeout(() => { player.taxAlert = null; }, 2500);
+                    }
+                    showTaxSelector.value = false;
+                };
+
+                // --- CMD DAMAGE (SPLIT) ---
+                const updateCmdDamage = (player, sourceId, cmdType, amount) => {
+                    if (!player.cmdDamage[sourceId]) player.cmdDamage[sourceId] = { c1: 0, c2: 0 };
+                    player.cmdDamage[sourceId][cmdType] += amount;
+                    player.life -= amount;
+                };
+
+                const isDead = (player) => {
+                    if (player.life <= 0) return true;
+                    if (player.poison >= 10) return true;
+                    for (let key in player.cmdDamage) {
+                        if (player.cmdDamage[key].c1 >= 21 || player.cmdDamage[key].c2 >= 21) return true;
+                    }
+                    return false;
+                };
+
+                // --- ROLL FOR FIRST ---
+                const rollForFirst = () => {
+                    if (isRolling.value) return;
+                    isRolling.value = true;
+                    players.value.forEach(p => p.isStarting = false);
+                    let jumps = 0; const maxJumps = 20; let speed = 50;
+                    const loop = () => {
+                        players.value.forEach(p => p.isStarting = false);
+                        const r = Math.floor(Math.random() * 4);
+                        players.value[r].isStarting = true;
+                        jumps++;
+                        if (jumps < maxJumps) { speed += 10; setTimeout(loop, speed); } else { isRolling.value = false; }
+                    };
+                    loop();
+                };
+
+                // --- GROUP LOGIC ---
+                const switchGroup = () => {
+                    const cleanName = groupName.value.trim() || "default";
+                    groupName.value = cleanName;
+                    localStorage.setItem('cmdr_group', cleanName);
+                    savedProfiles.value = [];
+                    players.value.forEach(p => p.profileId = null);
+                    loadProfiles();
+                };
+                const getGroupRef = (collectionName) => window.dbMethods.collection(window.db, "groups", groupName.value, collectionName);
+
+                // --- DB & SAVE ---
+                const saveGameAndReset = async () => {
+                    if (winner.value.profileId) {
+                        const winnerRef = window.dbMethods.doc(window.db, "groups", groupName.value, "profiles", winner.value.profileId);
+                        await window.dbMethods.updateDoc(winnerRef, { wins: window.dbMethods.increment(1), gamesPlayed: window.dbMethods.increment(1) });
+                        try {
+                            await window.dbMethods.addDoc(getGroupRef("match_history"), {
+                                winnerId: winner.value.profileId,
+                                winnerName: winner.value.name,
+                                winMethod: winner.value.method || "Unknown",
+                                commander: winner.value.commanderName || null,
+                                partner: winner.value.partnerName || null,
+                                timestamp: window.dbMethods.serverTimestamp(),
+                            });
+                        } catch(e) { console.error(e); }
+                    }
+                    for (let p of players.value) {
+                        if (p.profileId && p.profileId !== winner.value.profileId) {
+                            const pRef = window.dbMethods.doc(window.db, "groups", groupName.value, "profiles", p.profileId);
+                            await window.dbMethods.updateDoc(pRef, { gamesPlayed: window.dbMethods.increment(1) });
+                        }
+                    }
+                    resetWithoutSave();
+                };
+
+                // --- STATS ---
+                const fetchAndShowStats = async () => {
+                    showStats.value = true; loadingStats.value = true;
+                    try {
+                        const snap = await window.dbMethods.getDocs(getGroupRef("match_history"));
+                        const matches = snap.docs.map(d => d.data());
+                        const winsByPlayer = {}; const winsByMethod = {};
+                        matches.forEach(m => {
+                            const name = m.winnerName || "Unknown";
+                            winsByPlayer[name] = (winsByPlayer[name] || 0) + 1;
+                            const method = m.winMethod || "Unknown";
+                            winsByMethod[method] = (winsByMethod[method] || 0) + 1;
+                        });
+                        loadingStats.value = false;
+                        nextTick(() => { renderCharts(winsByPlayer, winsByMethod); });
+                    } catch (e) { loadingStats.value = false; }
+                };
+                const renderCharts = (winsByPlayer, winsByMethod) => {
+                    chartInstances.forEach(c => c.destroy()); chartInstances.length = 0;
+                    const ctx1 = document.getElementById('playerChart');
+                    if(ctx1) chartInstances.push(new Chart(ctx1, { type: 'bar', data: { labels: Object.keys(winsByPlayer), datasets: [{ label: 'Wins', data: Object.values(winsByPlayer), backgroundColor: '#3b82f6' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: {legend: {display:false}}, scales: { y: {beginAtZero:true, ticks:{color:'#9ca3af'}}, x:{ticks:{color:'#9ca3af'}} } } }));
+                    const ctx2 = document.getElementById('methodChart');
+                    if(ctx2) chartInstances.push(new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(winsByMethod), datasets: [{ data: Object.values(winsByMethod), backgroundColor: ['#ef4444', '#22c55e', '#a855f7', '#3b82f6', '#eab308'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {color:'#d1d5db'} } } } }));
+                };
+
+                // --- STANDARD ---
+                const loadProfiles = async () => { try { const snap = await window.dbMethods.getDocs(getGroupRef("profiles")); savedProfiles.value = snap.docs.map(doc => ({ id: doc.id, ...doc.data() })); } catch (e) {} };
+                const createProfile = async () => { if (!newProfileName.value) return; try { const docRef = await window.dbMethods.addDoc(getGroupRef("profiles"), { name: newProfileName.value, wins: 0, gamesPlayed: 0 }); savedProfiles.value.push({ id: docRef.id, name: newProfileName.value, wins: 0 }); newProfileName.value = ""; showNewProfile.value = false; } catch (e) { alert("Error"); } };
+                const resetWithoutSave = () => { winner.value = null; showSetup.value = true; players.value.forEach(p => { p.life = 40; p.poison = 0; p.cmdDamage = {}; p.showCmd = false; p.showPoison = false; p.commanderCasts = 0; p.partnerCasts = 0; p.taxAlert = null; p.isStarting = false; p.commanderName = null; p.partnerName = null; }); loadProfiles(); };
+                const initiateWinSequence = (player) => { pendingWinner.value = player; pendingWinner.value.name = getProfileName(player); showWinSelector.value = true; };
+                const finalizeWin = (method) => { winner.value = pendingWinner.value; winner.value.method = method; showWinSelector.value = false; pendingWinner.value = null; };
+                const activateWakeLock = async () => { if ('wakeLock' in navigator) try { await navigator.wakeLock.request('screen'); wakeLockActive.value = true; } catch (err) {} };
+                const startGame = () => { showSetup.value = false; activateWakeLock(); };
+                const updateLife = (player, amount) => player.life += amount;
+                const getProfileName = (player) => { if (!player.profileId) return `Guest ${player.id}`; const profile = savedProfiles.value.find(p => p.id === player.profileId); return profile ? profile.name : "Unknown"; };
+                const getOpponents = (myId) => players.value.filter(p => p.id !== myId);
+                const checkForWinner = () => { const alive = players.value.filter(p => !isDead(p)); if (alive.length === 1) { initiateWinSequence(alive[0]); } else if (alive.length === 0) { if(confirm("Everyone is dead. Reset?")) resetWithoutSave(); } else { if(confirm("Force end game? (No stats saved)")) resetWithoutSave(); } };
+                const uploadBackground = (event, player) => { const file = event.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (e) => player.bgImage = e.target.result; reader.readAsDataURL(file); } };
+
+                onMounted(() => { loadProfiles(); document.addEventListener('touchstart', activateWakeLock, { once: true }); });
+
+                return { players, savedProfiles, showSetup, showNewProfile, newProfileName, winner, wakeLockActive, showWinSelector, pendingWinner, showStats, loadingStats, groupName, isRolling, rollForFirst, switchGroup, createProfile, startGame, updateLife, updateCmdDamage, isDead, getProfileName, getOpponents, checkForWinner, saveGameAndReset, resetWithoutSave, uploadBackground, activateWakeLock, initiateWinSequence, finalizeWin, fetchAndShowStats, showCmdSearch, cmdSearchQuery, cmdLoading, openCommanderSearch, cmdSuggestions, handleSearchInput, selectCommander, isSearchingPartner, removePartner, showTaxSelector, taxPlayer, applyTax, handleCastClick };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
